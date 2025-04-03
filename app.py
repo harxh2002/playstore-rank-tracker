@@ -1,46 +1,27 @@
-from flask import Flask, jsonify
-import datetime
-import pandas as pd
+from flask import Flask, request, render_template
 from google_play_scraper import search
 
 app = Flask(__name__)
 
-# 🔹 Configuration
-APP_PACKAGE = "com.whatsapp"  # Replace with your app's package name
-KEYWORDS = ["messenger", "chat app", "video call"]
-COUNTRY = "us"
-NUM_RESULTS = 50
-EXCEL_FILE = "playstore_rankings.xlsx"
+@app.route("/", methods=["GET", "POST"])
+def index():
+    results = {}
 
-# 🔹 Function to Fetch Rankings
-def get_rank(keyword):
-    results = search(keyword, country=COUNTRY)  # Remove 'n' parameter
-    results = results[:NUM_RESULTS]  # Manually limit the results
-    for rank, app in enumerate(results, start=1):
-        if app['appId'] == APP_PACKAGE:
-            return rank
-    return "Not Found"
+    if request.method == "POST":
+        app_packages = request.form["app_packages"].split(",")  # Multiple apps
+        keywords = request.form["keywords"].split(",")  # Multiple keywords
 
-@app.route("/")
-def fetch_rankings():
-    date = datetime.date.today().strftime("%Y-%m-%d")
-    rankings = []
+        for app_package in app_packages:
+            app_package = app_package.strip()
+            results[app_package] = {}
 
-    for keyword in KEYWORDS:
-        rank = get_rank(keyword)
-        rankings.append({"date": date, "keyword": keyword, "rank": rank})
+            for keyword in keywords:
+                keyword = keyword.strip()
+                search_results = search(keyword, country="us")[:50]  # Get top 50 results
+                rank = next((i+1 for i, app in enumerate(search_results) if app['appId'] == app_package), "Not Found")
+                results[app_package][keyword] = rank
 
-    # Save to Excel
-    try:
-        df_existing = pd.read_excel(EXCEL_FILE)
-        df_new = pd.DataFrame(rankings)
-        df_combined = pd.concat([df_existing, df_new], ignore_index=True)
-    except FileNotFoundError:
-        df_combined = pd.DataFrame(rankings)
-
-    df_combined.to_excel(EXCEL_FILE, index=False)
-
-    return jsonify({"message": "✅ Rankings updated!", "data": rankings})
+    return render_template("index.html", results=results)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=10000)

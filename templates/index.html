@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Play Store Rank Tracker</title>
+</head>
+<body>
+    <h2>Enter Apps & Keywords</h2>
+    <form method="POST">
+        <label>App Package Names (comma-separated):</label>
+        <input type="text" name="app_packages" required placeholder="e.g. com.app1, com.app2">
+        <br><br>
+        <label>Keywords (comma-separated):</label>
+        <input type="text" name="keywords" required placeholder="e.g. trading, finance, crypto">
+        <br><br>
+        <button type="submit">Check Rankings</button>
+    </form>
+
+    {% if results %}
+    <h3>Ranking Results</h3>
+    {% for app_package, keywords in results.items() %}
+        <h4>App: {{ app_package }}</h4>
+        <ul>
+            {% for keyword, rank in keywords.items() %}
+                <li><strong>{{ keyword }}:</strong> Rank {{ rank }}</li>
+            {% endfor %}
+        </ul>
+    {% endfor %}
+    {% endif %}
+</body>
+</html>
